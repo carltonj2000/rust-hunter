@@ -1,50 +1,36 @@
+use clap::Parser;
 use std::collections::VecDeque;
 use std::fs;
 use std::path::PathBuf;
 
-#[derive(Default, Debug)]
+fn validate_package_name(name: &str) -> Result<(), String> {
+    if name.trim().len() != name.len() {
+        Err(String::from(
+            "package name cannot have leading and trailing space",
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+#[derive(Parser, Default, Debug)]
+#[clap(author = "Carlton Joseph", version, about)]
+/// A simple package hunter
 struct Arguments {
+    #[clap(forbid_empty_values = true, validator = validate_package_name)]
+    /// Name of the package to search
     package_name: String,
+    #[clap(short, long, default_value_t=usize::MAX)]
+    /// Maximum depth of the search
     max_depth: usize,
 }
 fn main() {
-    let args = get_arguments();
+    let args = Arguments::parse();
     println!("{:?}", args);
     match count(args) {
         Ok(c) => println!("{} usage count", c),
         Err(e) => println!("error! {}", e),
     };
-}
-
-fn get_arguments() -> Arguments {
-    let mut params = Arguments::default();
-    let args: Vec<_> = std::env::args().collect();
-    let len = args.len();
-    if len < 2 {
-        println!("Enter a -f argument");
-        std::process::exit(1);
-    };
-    if args[1] != "-f" {
-        println!("provide -f argument first");
-        std::process::exit(1);
-    }
-    params.package_name = args[2].clone();
-    let mdepth = if len > 3 {
-        if args[3] != "-d" {
-            println!("provide -d argument second");
-            std::process::exit(1);
-        }
-        if len < 5 {
-            println!("No -d argument provided");
-            std::process::exit(1);
-        };
-        args[4].parse().unwrap()
-    } else {
-        usize::MAX
-    };
-    println!("{:?}", args);
-    params.max_depth = mdepth;
-    params
 }
 
 fn count(args: Arguments) -> std::io::Result<usize> {
